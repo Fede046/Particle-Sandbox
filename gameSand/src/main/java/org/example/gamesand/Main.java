@@ -13,6 +13,7 @@ package org.example.gamesand;
  * Il game loop vero e proprio girerà su un thread SEPARATO (lo vedremo in
  * GamePanel), ma la creazione della finestra parte sempre dall'EDT.
  */
+//Sing -> libreri a graficoa standard integrata in Java serve per creare le interfacce grafiche
 public class Main {
 
     public static void main(String[] args) {

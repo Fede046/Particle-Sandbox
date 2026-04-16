@@ -25,6 +25,7 @@ public class GameWindow {
     public static final int HEIGHT = 600;
     public static final String TITLE = "Particle Sandbox";
 
+    //Classe standard di Swing per creare una finestra dotata di bordi, icon e pulsanti
     private final JFrame frame;
     private final GamePanel panel; // il Canvas dove gira tutto
 
@@ -32,6 +33,7 @@ public class GameWindow {
         panel = new GamePanel();
 
         frame = new JFrame(TITLE);
+        //Dice al programma di chiudersi  completamente quando chiudo la finestra
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         // Diciamo al layout manager quanto deve essere grande il Canvas.
