@@ -16,6 +16,9 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
+import org.example.gamesand.world.DialogueTrigger;
 /**
  * GAMEPANEL.java — Il cuore del gioco
  *
@@ -50,6 +53,8 @@ import java.awt.event.MouseEvent;
  * su macchine diverse — fondamentale per la fisica deterministica.
  */
 public class GamePanel extends Canvas implements Runnable {
+
+    private boolean waterMessagePlayed = false;
 
     private static final long serialVersionUID = 1L;
 
@@ -89,6 +94,10 @@ public class GamePanel extends Canvas implements Runnable {
 
     private Camera camera;
 
+    // Variabili per il sistema di dialoghi
+    private boolean isDialogueActive = false;
+    private String currentDialogueText = "";
+    private List<DialogueTrigger> triggers;
     // ─────────────────────────────────────────────────────────
     // SETUP
     // ─────────────────────────────────────────────────────────
@@ -123,7 +132,12 @@ public class GamePanel extends Canvas implements Runnable {
         player = new Player(GameWindow.WIDTH / 2, 100);
 
 
-
+        // Inizializza i trigger
+        triggers = new ArrayList<>();
+        // Creiamo un trigger invisibile: parte da x=200, y=100 (in aria o a terra dipende dal tuo livello)
+        // È largo 100 e alto 200 pixel. Quando il giocatore ci passa, appare il testo.
+        triggers.add(new DialogueTrigger(200, 100, 100, 200, "L'antica caverna trema... Sento odore di polvere."));
+        triggers.add(new DialogueTrigger(600, 100, 100, 200, "Forse dovrei stare attento a dove metto i piedi."));
 
 
     }
@@ -232,24 +246,52 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora è vuoto — lo riempiremo nei prossimi step.
      */
     private void update() {
-        // Calcola l'offset della telecamera per il mouse
+        // 1. SE IL DIALOGO È ATTIVO -> METTI IN PAUSA IL GIOCO
+        if (isDialogueActive) {
+            if (keyH.spacePressed) {
+                isDialogueActive = false; // Chiudi il dialogo
+                keyH.spacePressed = false; // "Consuma" il tasto per non riaprirlo per sbaglio
+            }
+            return; // "return" ferma l'esecuzione di update. Nessuna fisica, nessun movimento!
+        }
+
+        // --- GIOCO NORMALE (Mettiamo qui dentro il codice che avevi già) ---
         int worldMouseX = mouseH.x + (int)camera.x;
         int worldMouseY = mouseH.y + (int)camera.y;
 
-        // Se premiamo il mouse, genera particelle (il tasto destro forza il pennello a EMPTY)
         if (mouseH.isPressed) {
             ParticleType brushToUse = mouseH.isRightClick ? ParticleType.EMPTY : keyH.currentBrush;
             world.setParticle(worldMouseX, worldMouseY, brushToUse, 10);
         }
 
-        // Passa gli input del KeyHandler al Player
         player.update(world, keyH.upPressed, keyH.leftPressed, keyH.rightPressed);
-
-        // Aggiorna la telecamera
         camera.update(player.x, player.y, player.width, player.height, world.getWidth(), world.getHeight());
-
-        // Aggiorna la simulazione della fisica
         world.update(camera, GameWindow.WIDTH, GameWindow.HEIGHT);
+
+        // 1. Controllo collisione con l'acqua
+        boolean isTouchingWater = false;
+
+        // Controlliamo l'area occupata dal giocatore nel mondo
+        for (int cx = (int)player.x; cx < (int)(player.x + player.width); cx++) {
+            for (int cy = (int)player.y; cy < (int)(player.y + player.height); cy++) {
+                // Se almeno un pixel sotto il giocatore è ACQUA...
+                if (world.getParticle(cx, cy) == ParticleType.WATER) {
+                    isTouchingWater = true;
+                    break;
+                }
+            }
+        }
+
+        // 2. Se tocca l'acqua e non abbiamo ancora mostrato il messaggio
+        if (isTouchingWater && !waterMessagePlayed) {
+            isDialogueActive = true;
+            currentDialogueText = "L'acqua è gelida in questa zona della caverna...";
+            waterMessagePlayed = true; // Segna come letto
+
+            // Ferma il movimento per la pausa del dialogo
+            keyH.leftPressed = false;
+            keyH.rightPressed = false;
+        }
     }
 
     // ─────────────────────────────────────────────────────────
@@ -313,5 +355,25 @@ public class GamePanel extends Canvas implements Runnable {
         g.drawString("Elemento: " + keyH.currentBrush.name(), 10, 40);
         g.setColor(Color.LIGHT_GRAY);
         g.drawString("Muovi: WASD | Crea: 1, 2, 3, 0 + Click Mouse", 10, 60);
+
+        // --- DISEGNA IL BOX DI DIALOGO ---
+        if (isDialogueActive) {
+            // Un bel rettangolo nero semi-trasparente in basso
+            g.setColor(new Color(0, 0, 0, 200));
+            g.fillRoundRect(50, GameWindow.HEIGHT - 150, GameWindow.WIDTH - 100, 100, 20, 20);
+
+            // Bordo bianco per renderlo elegante
+            g.setColor(Color.WHITE);
+            g.drawRoundRect(50, GameWindow.HEIGHT - 150, GameWindow.WIDTH - 100, 100, 20, 20);
+
+            // Testo della storia
+            g.setFont(new java.awt.Font("Serif", java.awt.Font.BOLD, 18));
+            g.drawString(currentDialogueText, 80, GameWindow.HEIGHT - 100);
+
+            // Indicatore per far capire al giocatore come proseguire
+            g.setFont(new java.awt.Font("SansSerif", java.awt.Font.ITALIC, 14));
+            g.setColor(Color.LIGHT_GRAY);
+            g.drawString("Premi [SPAZIO] per continuare...", GameWindow.WIDTH - 250, GameWindow.HEIGHT - 65);
+        }
     }
 }
