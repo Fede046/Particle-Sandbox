@@ -1,4 +1,4 @@
-package org.example.gamesand;
+package org.example.gamesand.world;
 
 import java.awt.Color;
 

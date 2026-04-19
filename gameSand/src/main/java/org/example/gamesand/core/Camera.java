@@ -1,4 +1,4 @@
-package org.example.gamesand;
+package org.example.gamesand.core;
 
 public class Camera {
     public float x, y;

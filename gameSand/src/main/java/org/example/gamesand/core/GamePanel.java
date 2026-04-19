@@ -1,4 +1,11 @@
-package org.example.gamesand;
+package org.example.gamesand.core;
+
+import org.example.gamesand.entities.Player;
+import org.example.gamesand.world.ParticleType;
+import org.example.gamesand.world.World;
+import org.example.gamesand.world.WorldRenderer;
+import org.example.gamesand.input.KeyHandler;
+import org.example.gamesand.input.MouseHandler;
 
 import java.awt.Canvas;
 import java.awt.Color;
@@ -55,10 +62,10 @@ public class GamePanel extends Canvas implements Runnable {
     private World world;
     private WorldRenderer worldRenderer;
 
-    // ── Variabili per l'input ──
-    private ParticleType currentBrush = ParticleType.SAND;
-    private boolean mousePressed = false;
-    private int mouseX = 0, mouseY = 0;
+
+    // ── Variabili per l'input isolate ──
+    private KeyHandler keyH;
+    private MouseHandler mouseH;
 
     // Il thread separato su cui gira il loop
     private Thread gameThread;
@@ -77,7 +84,7 @@ public class GamePanel extends Canvas implements Runnable {
 
     // ── Variabili del Giocatore e Input ──
     private Player player;
-    private boolean keyW = false, keyA = false, keyS = false, keyD = false;
+
 
 
     private Camera camera;
@@ -101,50 +108,21 @@ public class GamePanel extends Canvas implements Runnable {
         worldRenderer = new WorldRenderer(world, GameWindow.WIDTH, GameWindow.HEIGHT);
 
         // Aggiungi controlli MOUSE
-        MouseAdapter mouseAdapter = new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                mousePressed = true;
-                mouseX = e.getX(); mouseY = e.getY();
-                // Click destro = Gomma
-                if(e.getButton() == MouseEvent.BUTTON3) currentBrush = ParticleType.EMPTY;
-            }
-            @Override
-            public void mouseReleased(MouseEvent e) { mousePressed = false; }
-            @Override
-            public void mouseDragged(MouseEvent e) { mouseX = e.getX(); mouseY = e.getY(); }
-        };
-        addMouseListener(mouseAdapter);
-        addMouseMotionListener(mouseAdapter);
+
+        // Inizializza i gestori dell'input
+        keyH = new KeyHandler();
+        mouseH = new MouseHandler();
+
+        // Aggiungili al pannello
+        addKeyListener(keyH);
+        addMouseListener(mouseH);
+        addMouseMotionListener(mouseH);
 
         // Inizializza il giocatore al centro dello schermo in alto
         player = new Player(GameWindow.WIDTH / 2, 100);
 
-        // --- SOSTITUISCI il vecchio addKeyListener con questo ---
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                // Tasti per gli elementi (Sand, Water, Stone, Gomma)
-                if (e.getKeyCode() == KeyEvent.VK_1) currentBrush = ParticleType.SAND;
-                if (e.getKeyCode() == KeyEvent.VK_2) currentBrush = ParticleType.WATER;
-                if (e.getKeyCode() == KeyEvent.VK_3) currentBrush = ParticleType.STONE;
-                if (e.getKeyCode() == KeyEvent.VK_0) currentBrush = ParticleType.EMPTY;
 
-                // Tasti di movimento
-                if (e.getKeyCode() == KeyEvent.VK_W) keyW = true;
-                if (e.getKeyCode() == KeyEvent.VK_A) keyA = true;
-                if (e.getKeyCode() == KeyEvent.VK_S) keyS = true;
-                if (e.getKeyCode() == KeyEvent.VK_D) keyD = true;
-            }
 
-            @Override
-            public void keyReleased(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_W) keyW = false;
-                if (e.getKeyCode() == KeyEvent.VK_A) keyA = false;
-                if (e.getKeyCode() == KeyEvent.VK_S) keyS = false;
-                if (e.getKeyCode() == KeyEvent.VK_D) keyD = false;
-            }
-        });
 
 
     }
@@ -253,20 +231,24 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora è vuoto — lo riempiremo nei prossimi step.
      */
     private void update() {
-        // Trasforma le coordinate del mouse da schermo a mondo
-        int worldMouseX = mouseX + (int)camera.x;
-        int worldMouseY = mouseY + (int)camera.y;
+        // Calcola l'offset della telecamera per il mouse
+        int worldMouseX = mouseH.x + (int)camera.x;
+        int worldMouseY = mouseH.y + (int)camera.y;
 
-        if (mousePressed) {
-            world.setParticle(worldMouseX, worldMouseY, currentBrush, 10);
+        // Se premiamo il mouse, genera particelle (il tasto destro forza il pennello a EMPTY)
+        if (mouseH.isPressed) {
+            ParticleType brushToUse = mouseH.isRightClick ? ParticleType.EMPTY : keyH.currentBrush;
+            world.setParticle(worldMouseX, worldMouseY, brushToUse, 10);
         }
 
-        player.update(world, keyW, keyA, keyD);
+        // Passa gli input del KeyHandler al Player
+        player.update(world, keyH.upPressed, keyH.leftPressed, keyH.rightPressed);
 
-        // La camera segue il giocatore
+        // Aggiorna la telecamera
         camera.update(player.x, player.y, player.width, player.height, world.getWidth(), world.getHeight());
 
-        world.update();
+        // Aggiorna la simulazione della fisica
+        world.update(camera, GameWindow.WIDTH, GameWindow.HEIGHT);
     }
 
     // ─────────────────────────────────────────────────────────
@@ -319,7 +301,7 @@ public class GamePanel extends Canvas implements Runnable {
         g.setColor(Color.WHITE);
         g.drawString("FPS: " + fps + "  UPS: " + ups, 10, 20);
         g.setColor(Color.YELLOW);
-        g.drawString("Elemento: " + currentBrush.name(), 10, 40);
+        g.drawString("Elemento: " + keyH.currentBrush.name(), 10, 40);
         g.setColor(Color.LIGHT_GRAY);
         g.drawString("Muovi: WASD | Crea: 1, 2, 3, 0 + Click Mouse", 10, 60);
     }

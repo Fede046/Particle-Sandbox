@@ -1,4 +1,6 @@
-package org.example.gamesand;
+package org.example.gamesand.world;
+
+import org.example.gamesand.core.Camera;
 
 import java.util.Random;
 
@@ -58,16 +60,28 @@ public class World {
     }
 
     // ─── LOGICA DELLA FISICA ──────────────────────────────────────
-    public void update() {
-        // Bisogna aggiornare dal BASSO verso L'ALTO, altrimenti le particelle
-        // cadono 600 pixel in un solo frame!
-        for (int y = height - 2; y >= 0; y--) {
-            // Randomizziamo se leggere da sinistra a destra o viceversa
-            // per evitare che i liquidi scorrano solo da un lato
+    // ─── LOGICA DELLA FISICA (OTTIMIZZATA PER TELECAMERA) ──────────────────
+    public void update(Camera camera, int screenWidth, int screenHeight) {
+        // 1. Definiamo un margine (es. 64 pixel) in modo che la fisica funzioni
+        //    anche appena fuori dallo schermo.
+        int margin = 64;
+
+        // 2. Calcoliamo i bordi dell'Area Attiva
+        int startX = Math.max(0, (int)camera.x - margin);
+        int endX = Math.min(width, (int)camera.x + screenWidth + margin);
+
+        int startY = Math.max(0, (int)camera.y - margin);
+        int endY = Math.min(height - 1, (int)camera.y + screenHeight + margin);
+
+        // 3. Aggiorniamo DAL BASSO VERSO L'ALTO, ma SOLO nell'Area Attiva
+        for (int y = endY - 1; y >= startY; y--) {
             boolean leftToRight = random.nextBoolean();
 
-            for (int i = 0; i < width; i++) {
-                int x = leftToRight ? i : width - 1 - i;
+            int areaWidth = endX - startX;
+            for (int i = 0; i < areaWidth; i++) {
+                // Calcola l'indice X reale nel mondo
+                int x = leftToRight ? (startX + i) : (endX - 1 - i);
+
                 ParticleType p = grid[x][y];
 
                 if (p == ParticleType.SAND) {

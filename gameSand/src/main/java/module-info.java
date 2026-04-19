@@ -5,5 +5,10 @@ module org.example.gamesand {
 
 
     opens org.example.gamesand to javafx.fxml;
-    exports org.example.gamesand;
+    exports org.example.gamesand.core;
+    opens org.example.gamesand.core to javafx.fxml;
+    exports org.example.gamesand.world;
+    opens org.example.gamesand.world to javafx.fxml;
+    exports org.example.gamesand.entities;
+    opens org.example.gamesand.entities to javafx.fxml;
 }

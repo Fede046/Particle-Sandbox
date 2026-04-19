@@ -1,4 +1,4 @@
-package org.example.gamesand;
+package org.example.gamesand.core;
 
 import javax.swing.JFrame;
 import java.awt.Dimension;

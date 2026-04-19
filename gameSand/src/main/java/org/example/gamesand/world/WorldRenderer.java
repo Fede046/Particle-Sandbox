@@ -1,4 +1,6 @@
-package org.example.gamesand;
+package org.example.gamesand.world;
+
+import org.example.gamesand.core.Camera;
 
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
