@@ -100,8 +100,9 @@ public class GamePanel extends Canvas implements Runnable {
         setIgnoreRepaint(true);
         setBackground(Color.BLACK);
 
-        // Inizializza il mondo della grandezza della finestra
-        world = new World(GameWindow.WIDTH, GameWindow.HEIGHT);
+
+        // Assicurati che i nomi corrispondano ai file che hai messo nella cartella resources
+        world = new World("\\org\\example\\gamesand\\level_mask.png", "\\org\\example\\gamesand\\background.jpg");
 
         camera = new Camera(GameWindow.WIDTH, GameWindow.HEIGHT);
         // Aggiorna anche l'inizializzazione del renderer
@@ -290,6 +291,14 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora: sfondo nero + testo FPS/UPS per verificare che il loop giri.
      */
     private void drawFrame(Graphics2D g) {
+        // 1. Disegna lo sfondo fisso dietro a tutto
+        if (world.backgroundImage != null) {
+            // Lo disegniamo grande quanto lo schermo. Se vuoi che si muova con la telecamera,
+            // basta calcolare un offset dividendo camera.x per un moltiplicatore (effetto parallasse!)
+            g.drawImage(world.backgroundImage, 0, 0, GameWindow.WIDTH, GameWindow.HEIGHT, null);
+        }
+
+        // 2. Disegna le particelle (solo i muri, l'EMPTY ora è trasparente!)
         worldRenderer.render(g, camera);
 
         // Disegna il giocatore passandogli la telecamera

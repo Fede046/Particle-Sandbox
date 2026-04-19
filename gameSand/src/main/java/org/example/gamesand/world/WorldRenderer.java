@@ -16,8 +16,9 @@ public class WorldRenderer {
         this.world = world;
         this.screenWidth = screenWidth;
         this.screenHeight = screenHeight;
-        // L'immagine è solo 800x600
-        image = new BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_RGB);
+
+        // CAMBIO FONDAMENTALE: TYPE_INT_ARGB al posto di TYPE_INT_RGB
+        image = new BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_ARGB);
         pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
     }
 

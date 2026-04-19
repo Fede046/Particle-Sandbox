@@ -2,6 +2,7 @@ package org.example.gamesand.world;
 
 import org.example.gamesand.core.Camera;
 
+import java.awt.image.BufferedImage;
 import java.util.Random;
 
 public class World {
@@ -10,22 +11,24 @@ public class World {
     private ParticleType[][] grid;
     private Random random = new Random();
 
-    public World(int width, int height) {
-        // Definiamo dimensioni arbitrarie molto più grandi dello schermo
-        this.width = 3200;
-        this.height = 1200;
-        this.grid = new ParticleType[this.width][this.height];
+    // Nuova variabile
+    public BufferedImage backgroundImage;
 
-        for (int x = 0; x < this.width; x++) {
-            for (int y = 0; y < this.height; y++) {
-                // Pavimento di pietra in fondo al mondo grande
-                if (y > this.height - 50) {
-                    grid[x][y] = ParticleType.STONE;
-                } else {
-                    grid[x][y] = ParticleType.EMPTY;
-                }
-            }
+    public World(String maskPath, String backgroundPath) {
+        // 1. Carichiamo la maschera fisica
+        this.grid = LevelLoader.loadCollisionMask(maskPath);
+
+        // 2. Se fallisce, crea una griglia di emergenza
+        if (this.grid == null) {
+            this.width = 800; this.height = 600;
+            this.grid = new ParticleType[width][height];
+        } else {
+            this.width = grid.length;
+            this.height = grid[0].length;
         }
+
+        // 3. Carichiamo lo sfondo decorativo
+        this.backgroundImage = LevelLoader.loadBackground(backgroundPath);
     }
 
     // Aggiungi questo metodo per permettere a GamePanel di rigenerare la mappa (col tasto R)
