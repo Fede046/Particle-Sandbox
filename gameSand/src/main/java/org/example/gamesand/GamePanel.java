@@ -5,7 +5,10 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferStrategy;
-
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 /**
  * GAMEPANEL.java — Il cuore del gioco
  *
@@ -48,6 +51,15 @@ public class GamePanel extends Canvas implements Runnable {
     private static final long NANOSECONDS      = 1_000_000_000L;
     private static final long NS_PER_UPDATE    = NANOSECONDS / TARGET_UPS; // ~16.67ms
 
+    // ── Nuove variabili del mondo ──
+    private World world;
+    private WorldRenderer worldRenderer;
+
+    // ── Variabili per l'input ──
+    private ParticleType currentBrush = ParticleType.SAND;
+    private boolean mousePressed = false;
+    private int mouseX = 0, mouseY = 0;
+
     // Il thread separato su cui gira il loop
     private Thread gameThread;
     private volatile boolean running = false;
@@ -72,6 +84,39 @@ public class GamePanel extends Canvas implements Runnable {
         // Gestiamo tutto noi manualmente nel loop.
         setIgnoreRepaint(true);
         setBackground(Color.BLACK);
+
+        // Inizializza il mondo della grandezza della finestra
+        world = new World(GameWindow.WIDTH, GameWindow.HEIGHT);
+        worldRenderer = new WorldRenderer(world);
+
+        // Aggiungi controlli MOUSE
+        MouseAdapter mouseAdapter = new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                mousePressed = true;
+                mouseX = e.getX(); mouseY = e.getY();
+                // Click destro = Gomma
+                if(e.getButton() == MouseEvent.BUTTON3) currentBrush = ParticleType.EMPTY;
+            }
+            @Override
+            public void mouseReleased(MouseEvent e) { mousePressed = false; }
+            @Override
+            public void mouseDragged(MouseEvent e) { mouseX = e.getX(); mouseY = e.getY(); }
+        };
+        addMouseListener(mouseAdapter);
+        addMouseMotionListener(mouseAdapter);
+
+        // Aggiungi controlli TASTIERA per cambiare elemento
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_1) currentBrush = ParticleType.SAND;
+                if (e.getKeyCode() == KeyEvent.VK_2) currentBrush = ParticleType.WATER;
+                if (e.getKeyCode() == KeyEvent.VK_3) currentBrush = ParticleType.STONE;
+                if (e.getKeyCode() == KeyEvent.VK_0) currentBrush = ParticleType.EMPTY;
+            }
+        });
+        setFocusable(true); // Necessario per leggere la tastiera
     }
 
     /**
@@ -178,7 +223,14 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora è vuoto — lo riempiremo nei prossimi step.
      */
     private void update() {
-        // TODO Step 2: World.update() → aggiorna la simulazione CA
+        // Se il mouse è premuto, genera particelle
+        if (mousePressed) {
+            world.setParticle(mouseX, mouseY, currentBrush, 10); // Pennello raggio 10
+        }
+
+        // Aggiorna la simulazione
+        world.update();
+
     }
 
     // ─────────────────────────────────────────────────────────
@@ -220,25 +272,20 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora: sfondo nero + testo FPS/UPS per verificare che il loop giri.
      */
     private void drawFrame(Graphics2D g) {
-        // Sfondo
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, getWidth(), getHeight());
+        // Disegna tutto il mondo e le particelle
+        worldRenderer.render(g);
 
-        // ── TODO Step 2: WorldRenderer.render(g) ──
+        // Interfaccia e istruzioni a schermo
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(new java.awt.Font("Monospaced", java.awt.Font.BOLD, 14));
 
-        // Debug HUD — FPS e UPS nell'angolo in alto a sinistra
-        // Questo ci dice subito se il loop sta girando correttamente
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                           RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setColor(Color.WHITE);
-        g.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 13));
         g.drawString("FPS: " + fps + "  UPS: " + ups, 10, 20);
 
-        // Messaggio temporaneo al centro — sparirà quando aggiungiamo il mondo
-        g.setColor(new Color(80, 80, 80));
-        g.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 16));
-        String msg = "Game Loop attivo — prossimo step: World + Particelle";
-        int msgW = g.getFontMetrics().stringWidth(msg);
-        g.drawString(msg, (getWidth() - msgW) / 2, getHeight() / 2);
+        // Mostra elemento attuale e controlli
+        g.setColor(Color.YELLOW);
+        g.drawString("Elemento: " + currentBrush.name(), 10, 40);
+        g.setColor(Color.LIGHT_GRAY);
+        g.drawString("Comandi: 1=Sabbia, 2=Acqua, 3=Pietra, 0/ClickDestro=Cancella", 10, 60);
     }
 }
