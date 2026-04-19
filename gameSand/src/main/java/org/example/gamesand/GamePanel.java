@@ -74,6 +74,14 @@ public class GamePanel extends Canvas implements Runnable {
     private int  fpsCounter, upsCounter;
     private long lastSecond;         // timestamp dell'ultimo reset contatori
 
+
+    // ── Variabili del Giocatore e Input ──
+    private Player player;
+    private boolean keyW = false, keyA = false, keyS = false, keyD = false;
+
+
+    private Camera camera;
+
     // ─────────────────────────────────────────────────────────
     // SETUP
     // ─────────────────────────────────────────────────────────
@@ -87,7 +95,10 @@ public class GamePanel extends Canvas implements Runnable {
 
         // Inizializza il mondo della grandezza della finestra
         world = new World(GameWindow.WIDTH, GameWindow.HEIGHT);
-        worldRenderer = new WorldRenderer(world);
+
+        camera = new Camera(GameWindow.WIDTH, GameWindow.HEIGHT);
+        // Aggiorna anche l'inizializzazione del renderer
+        worldRenderer = new WorldRenderer(world, GameWindow.WIDTH, GameWindow.HEIGHT);
 
         // Aggiungi controlli MOUSE
         MouseAdapter mouseAdapter = new MouseAdapter() {
@@ -106,17 +117,36 @@ public class GamePanel extends Canvas implements Runnable {
         addMouseListener(mouseAdapter);
         addMouseMotionListener(mouseAdapter);
 
-        // Aggiungi controlli TASTIERA per cambiare elemento
+        // Inizializza il giocatore al centro dello schermo in alto
+        player = new Player(GameWindow.WIDTH / 2, 100);
+
+        // --- SOSTITUISCI il vecchio addKeyListener con questo ---
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
+                // Tasti per gli elementi (Sand, Water, Stone, Gomma)
                 if (e.getKeyCode() == KeyEvent.VK_1) currentBrush = ParticleType.SAND;
                 if (e.getKeyCode() == KeyEvent.VK_2) currentBrush = ParticleType.WATER;
                 if (e.getKeyCode() == KeyEvent.VK_3) currentBrush = ParticleType.STONE;
                 if (e.getKeyCode() == KeyEvent.VK_0) currentBrush = ParticleType.EMPTY;
+
+                // Tasti di movimento
+                if (e.getKeyCode() == KeyEvent.VK_W) keyW = true;
+                if (e.getKeyCode() == KeyEvent.VK_A) keyA = true;
+                if (e.getKeyCode() == KeyEvent.VK_S) keyS = true;
+                if (e.getKeyCode() == KeyEvent.VK_D) keyD = true;
+            }
+
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_W) keyW = false;
+                if (e.getKeyCode() == KeyEvent.VK_A) keyA = false;
+                if (e.getKeyCode() == KeyEvent.VK_S) keyS = false;
+                if (e.getKeyCode() == KeyEvent.VK_D) keyD = false;
             }
         });
-        setFocusable(true); // Necessario per leggere la tastiera
+
+
     }
 
     /**
@@ -223,14 +253,20 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora è vuoto — lo riempiremo nei prossimi step.
      */
     private void update() {
-        // Se il mouse è premuto, genera particelle
+        // Trasforma le coordinate del mouse da schermo a mondo
+        int worldMouseX = mouseX + (int)camera.x;
+        int worldMouseY = mouseY + (int)camera.y;
+
         if (mousePressed) {
-            world.setParticle(mouseX, mouseY, currentBrush, 10); // Pennello raggio 10
+            world.setParticle(worldMouseX, worldMouseY, currentBrush, 10);
         }
 
-        // Aggiorna la simulazione
-        world.update();
+        player.update(world, keyW, keyA, keyD);
 
+        // La camera segue il giocatore
+        camera.update(player.x, player.y, player.width, player.height, world.getWidth(), world.getHeight());
+
+        world.update();
     }
 
     // ─────────────────────────────────────────────────────────
@@ -272,20 +308,19 @@ public class GamePanel extends Canvas implements Runnable {
      * Per ora: sfondo nero + testo FPS/UPS per verificare che il loop giri.
      */
     private void drawFrame(Graphics2D g) {
-        // Disegna tutto il mondo e le particelle
-        worldRenderer.render(g);
+        worldRenderer.render(g, camera);
 
-        // Interfaccia e istruzioni a schermo
+        // Disegna il giocatore passandogli la telecamera
+        player.render(g, camera);
+
+        // Interfaccia
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.setFont(new java.awt.Font("Monospaced", java.awt.Font.BOLD, 14));
-
         g.setColor(Color.WHITE);
         g.drawString("FPS: " + fps + "  UPS: " + ups, 10, 20);
-
-        // Mostra elemento attuale e controlli
         g.setColor(Color.YELLOW);
         g.drawString("Elemento: " + currentBrush.name(), 10, 40);
         g.setColor(Color.LIGHT_GRAY);
-        g.drawString("Comandi: 1=Sabbia, 2=Acqua, 3=Pietra, 0/ClickDestro=Cancella", 10, 60);
+        g.drawString("Muovi: WASD | Crea: 1, 2, 3, 0 + Click Mouse", 10, 60);
     }
 }

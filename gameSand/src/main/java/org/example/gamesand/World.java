@@ -9,16 +9,26 @@ public class World {
     private Random random = new Random();
 
     public World(int width, int height) {
-        this.width = width;
-        this.height = height;
-        this.grid = new ParticleType[width][height];
+        // Definiamo dimensioni arbitrarie molto più grandi dello schermo
+        this.width = 3200;
+        this.height = 1200;
+        this.grid = new ParticleType[this.width][this.height];
 
-        // Riempi tutto di vuoto inizialmente
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                grid[x][y] = ParticleType.EMPTY;
+        for (int x = 0; x < this.width; x++) {
+            for (int y = 0; y < this.height; y++) {
+                // Pavimento di pietra in fondo al mondo grande
+                if (y > this.height - 50) {
+                    grid[x][y] = ParticleType.STONE;
+                } else {
+                    grid[x][y] = ParticleType.EMPTY;
+                }
             }
         }
+    }
+
+    // Aggiungi questo metodo per permettere a GamePanel di rigenerare la mappa (col tasto R)
+    public void generateCave() {
+        this.grid = CaveGenerator.generate(width, height);
     }
 
     public int getWidth() { return width; }

@@ -8,28 +8,27 @@ public class WorldRenderer {
     private World world;
     private BufferedImage image;
     private int[] pixels;
+    private int screenWidth, screenHeight;
 
-    public WorldRenderer(World world) {
+    public WorldRenderer(World world, int screenWidth, int screenHeight) {
         this.world = world;
-        // Crea un'immagine vuota della stessa dimensione del mondo
-        image = new BufferedImage(world.getWidth(), world.getHeight(), BufferedImage.TYPE_INT_RGB);
-        // Estraiamo l'array della memoria grezza dell'immagine per scriverci velocemente
+        this.screenWidth = screenWidth;
+        this.screenHeight = screenHeight;
+        // L'immagine è solo 800x600
+        image = new BufferedImage(screenWidth, screenHeight, BufferedImage.TYPE_INT_RGB);
         pixels = ((DataBufferInt) image.getRaster().getDataBuffer()).getData();
     }
 
-    public void render(Graphics2D g) {
-        // 1. Aggiorna l'array dei pixel
-        int width = world.getWidth();
-        int height = world.getHeight();
+    public void render(Graphics2D g, Camera camera) {
+        for (int y = 0; y < screenHeight; y++) {
+            for (int x = 0; x < screenWidth; x++) {
+                // Calcoliamo quale pixel del mondo corrisponde a questo pixel dello schermo
+                int worldX = x + (int)camera.x;
+                int worldY = y + (int)camera.y;
 
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                int index = x + y * width;
-                pixels[index] = world.getParticle(x, y).color.getRGB();
+                pixels[x + y * screenWidth] = world.getParticle(worldX, worldY).color.getRGB();
             }
         }
-
-        // 2. Disegna l'immagine finita
         g.drawImage(image, 0, 0, null);
     }
 }
