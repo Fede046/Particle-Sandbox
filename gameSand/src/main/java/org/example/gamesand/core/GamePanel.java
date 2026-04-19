@@ -102,7 +102,7 @@ public class GamePanel extends Canvas implements Runnable {
 
 
         // Assicurati che i nomi corrispondano ai file che hai messo nella cartella resources
-        world = new World("\\org\\example\\gamesand\\level_mask.png", "\\org\\example\\gamesand\\background.jpg");
+        world = new World("/org/example/gamesand/level_mask.png", "/org/example/gamesand/background.jpg");
 
         camera = new Camera(GameWindow.WIDTH, GameWindow.HEIGHT);
         // Aggiorna anche l'inizializzazione del renderer

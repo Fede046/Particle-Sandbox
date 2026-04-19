@@ -10,6 +10,7 @@ public class World {
     private final int height;
     private ParticleType[][] grid;
     private Random random = new Random();
+    
 
     // Nuova variabile
     public BufferedImage backgroundImage;
